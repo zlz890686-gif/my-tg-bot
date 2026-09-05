@@ -1,11 +1,25 @@
 import os
 import json
+from threading import Thread
+from flask import Flask
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 TOKEN = "8857879696:AAECfRGeDHRjbCE1lZYiSD8TuBK832MqfwA"
 USERS_FILE = "users.json"
 
+# --- 假网页服务（绕过 Render 免费检测） ---
+web_app = Flask(__name__)
+
+@web_app.route('/')
+def home():
+    return "Bot is running perfectly!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 8080))
+    web_app.run(host="0.0.0.0", port=port)
+
+# --- 机器人核心功能 ---
 def load_users():
     if os.path.exists(USERS_FILE):
         try:
@@ -50,7 +64,8 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("📖 指令菜单：\n/start - 启动\n/stats - 用户统计\n/broadcast [内容] - 全员群发")
 
-if __name__ == "__main__":
+def main():
+    Thread(target=run_web).start()
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("stats", stats))
@@ -58,3 +73,6 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("help", help_command))
     print("Bot started...")
     app.run_polling()
+
+if __name__ == "__main__":
+    main()
